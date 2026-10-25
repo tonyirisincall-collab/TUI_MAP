@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f4f7fb">
+<title>TUI Pre-Travel System Map</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232f6fed'/%3E%3Cg stroke='white' stroke-width='1.8' stroke-linecap='round'%3E%3Cline x1='16' y1='16' x2='8' y2='9'/%3E%3Cline x1='16' y1='16' x2='24' y2='9'/%3E%3Cline x1='16' y1='16' x2='16' y2='25'/%3E%3C/g%3E%3Ccircle cx='16' cy='16' r='4.2' fill='white'/%3E%3Ccircle cx='8' cy='9' r='2.6' fill='white'/%3E%3Ccircle cx='24' cy='9' r='2.6' fill='white'/%3E%3Ccircle cx='16' cy='25' r='2.6' fill='white'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('tui-map-theme')==='dark'?'dark':'light'}catch(e){}</script>
+<link rel="manifest" href="manifest-map.webmanifest">
+<link rel="apple-touch-icon" href="icon-map-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<style>
+:root{--bg:#f4f7fb;--surface:#fff;--surface2:#eef2f8;--ink:#1c2a44;--muted:#66758f;--line:#dfe6f1;--brand:#2f6fed;--root:#1c2a44;--shadow:0 1px 2px rgba(28,42,68,.05),0 12px 30px -16px rgba(28,42,68,.2);--ease:cubic-bezier(.22,.8,.3,1)}
+[data-theme="dark"]{--bg:#0f1624;--surface:#171f30;--surface2:#1f293d;--ink:#e7edf8;--muted:#93a1ba;--line:#2a364d;--brand:#6b97ff;--root:#e7edf8;--shadow:0 1px 2px rgba(0,0,0,.4),0 12px 30px -16px rgba(0,0,0,.6);color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;line-height:1.5}
+button{font-family:inherit;color:inherit}
+.bar{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--line);position:relative;z-index:30}
+.brand{font-weight:700;letter-spacing:-.01em;white-space:nowrap}
+.brand small{display:block;font-weight:500;color:var(--muted);font-size:11px;letter-spacing:0}
+.search{position:relative;flex:1;max-width:520px;margin-left:8px}
+.search input{width:100%;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:12px;padding:9px 12px 9px 34px;font:500 14px Inter,system-ui,sans-serif;outline:none;transition:border-color .2s,box-shadow .2s}
+.search input:focus{border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 18%,transparent)}
+.search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:16px;height:16px;stroke:var(--muted);fill:none;stroke-width:2;stroke-linecap:round}
+#res{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;display:none}
+#res.open{display:block}
+#res button{display:flex;gap:10px;width:100%;text-align:left;border:0;background:transparent;padding:9px 12px;cursor:pointer;align-items:flex-start}
+#res button:hover,#res button.sel{background:var(--surface2)}
+#res i{width:10px;height:10px;border-radius:50%;margin-top:6px;flex:none}
+#res b{display:block;font-size:13.5px}#res span{font-size:12px;color:var(--muted)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:11px;padding:8px 13px;font:600 13px Inter,system-ui,sans-serif;cursor:pointer;transition:transform .25s var(--ease),background .2s,opacity .2s;white-space:nowrap}
+.btn:hover:not(:disabled){transform:translateY(-1px);background:var(--surface2)}
+.btn:disabled{opacity:.35;cursor:default}
+.btn.pri{background:var(--brand);border-color:var(--brand);color:#fff}
+main{flex:1;min-height:0;display:grid;grid-template-columns:1fr 390px}
+.stage{position:relative;min-width:0;min-height:0;overflow:hidden}
+#svg{position:absolute;inset:0;width:100%;height:100%}
+.nd{cursor:pointer;transition:transform .7s var(--ease),opacity .45s ease;outline:none}
+.nd.off{opacity:0;pointer-events:none}
+.nd rect{fill:color-mix(in srgb,var(--c) 13%,var(--surface));stroke:var(--c);stroke-width:1.6;transition:fill .2s}
+.nd text{fill:var(--ink);font:600 12.5px Inter,system-ui,sans-serif;text-anchor:middle;pointer-events:none}
+.nd:hover rect,.nd:focus-visible rect{fill:color-mix(in srgb,var(--c) 28%,var(--surface))}
+.nd.hub rect{stroke-width:2.8}
+.nd.focus{cursor:default}
+.nd.focus rect{fill:var(--c);stroke:var(--c)}
+.nd.focus text{fill:#fff;font-size:15px;font-weight:700}
+.nd.root rect{fill:var(--root)}.nd.root text{fill:var(--bg)}
+.ed{fill:none;stroke-width:2.2;opacity:.6;animation:edge .6s ease both}
+.ed2{fill:none;stroke-width:1.2;stroke-dasharray:3 5;opacity:.28;animation:edge .8s ease both}
+@keyframes edge{from{opacity:0}}
+.hint{position:absolute;left:14px;bottom:10px;font-size:12px;color:var(--muted);pointer-events:none}
+.trail{position:absolute;left:14px;right:14px;top:10px;display:flex;gap:5px;flex-wrap:nowrap;align-items:center;font-size:12px;color:var(--muted);overflow-x:auto;scrollbar-width:none;padding:2px 0;z-index:5}
+.trail::-webkit-scrollbar{display:none}
+.trail span{flex:none}
+.trail button{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 11px;font:600 12px Inter,system-ui,sans-serif;color:var(--ink);cursor:pointer;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:transform .2s var(--ease),border-color .2s,background .2s}
+.trail button:hover:not(.cur){transform:translateY(-1px);border-color:var(--brand);background:color-mix(in srgb,var(--brand) 10%,var(--surface))}
+.trail button.cur{cursor:default}
+.trail button.cur{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.panel{border-left:1px solid var(--line);background:var(--surface);overflow-y:auto;padding:22px 22px 40px}
+.panel .in{animation:rise .5s var(--ease) both}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}}
+.tag{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--c);background:color-mix(in srgb,var(--c) 13%,var(--surface));border-radius:999px;padding:4px 11px}
+.panel h2{margin:12px 0 4px;font-size:23px;letter-spacing:-.02em;line-height:1.2}
+.sum{margin:0 0 14px;color:var(--muted);font-size:14.5px}
+.panel ul{margin:0 0 6px;padding-left:18px;font-size:14px}.panel li{margin:0 0 6px}
+.panel h3{margin:20px 0 8px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px 6px 9px;font:600 12.5px Inter,system-ui,sans-serif;cursor:pointer;transition:transform .25s var(--ease),border-color .2s,background .2s}
+.chip:hover{transform:translateY(-2px);border-color:var(--c);background:color-mix(in srgb,var(--c) 10%,var(--surface))}
+.chip i{width:9px;height:9px;border-radius:50%;background:var(--c)}
+.gname{font-size:11px;color:var(--muted);margin:10px 0 5px;font-weight:600}
+.panel a{color:var(--brand);word-break:break-all}
+.how{display:grid;gap:8px;margin:0 0 6px;padding:0;list-style:none}
+.how li{display:flex;gap:10px;align-items:flex-start;margin:0}
+.how b{flex:none;width:24px;height:24px;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-size:12px}
+@media(max-width:820px){
+ main{grid-template-columns:1fr;grid-template-rows:auto 1fr;overflow-y:auto}
+ .stage{min-height:300px;flex:none}
+ .trail button{max-width:110px}
+ .panel{border-left:0;border-top:1px solid var(--line);overflow:visible}
+ .bar{flex-wrap:wrap}.search{order:5;flex-basis:100%;max-width:none;margin:0}
+ .brand small{display:none}
+}
+@media(prefers-reduced-motion:reduce){*{transition-duration:.01ms!important;animation:none!important}}
+.starwrap{position:relative}
+#sl{position:absolute;top:calc(100% + 8px);right:0;width:280px;max-height:60vh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);display:none;z-index:40}
+#sl.open{display:block}
+#sl button{display:flex;gap:10px;width:100%;text-align:left;border:0;background:transparent;padding:9px 12px;cursor:pointer;align-items:flex-start}
+#sl button:hover{background:var(--surface2)}
+#sl i{width:10px;height:10px;border-radius:50%;margin-top:6px;flex:none}
+#sl b{display:block;font-size:13.5px}#sl span{font-size:12px;color:var(--muted)}
+#sl .empty{padding:14px;font-size:13px;color:var(--muted)}
+#starsbtn b{color:#e0a21b}
+.trow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.starbtn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font:600 12.5px Inter,system-ui,sans-serif;cursor:pointer;transition:transform .2s var(--ease),background .2s}
+.starbtn:hover{transform:translateY(-1px);background:var(--surface2)}
+.starbtn.on{color:#b7791f;border-color:#e0a21b;background:color-mix(in srgb,#e0a21b 14%,var(--surface))}
+#mynote{width:100%;min-height:84px;resize:vertical;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:12px;padding:10px 12px;font:14px Inter,system-ui,sans-serif;outline:none}
+#mynote:focus{border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 18%,transparent)}
+.nsaved{height:18px;font-size:12px;font-weight:600;color:#2e9d6a;margin-top:4px}
+.nd .dstar,.nd.focus .dstar{fill:#e0a21b;font-size:15px;stroke:var(--surface);stroke-width:2.5px;paint-order:stroke;pointer-events:none}
+.nd .dnote{fill:#e0a21b;stroke:var(--surface);stroke-width:2;pointer-events:none}
+#install[hidden]{display:none}
+#res .qh{padding:8px 12px 2px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;color:var(--muted)}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="brand">System Map<small>TUI Pre-Travel</small></div>
+  <div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="q" type="text" placeholder="Search a code or topic: CANS, PRII, memo, H1079..." autocomplete="off" spellcheck="false"><div id="res"></div></div>
+  <div class="starwrap"><button class="btn" id="starsbtn" type="button">★ <b id="starcount">0</b></button><div id="sl"></div></div>
+  <button class="btn" id="back" type="button" disabled>&larr; Back</button>
+  <button class="btn pri" id="home" type="button">Map</button>
+  <button class="btn pri" id="install" type="button" hidden>Install</button>
+  <button class="btn" id="theme" type="button" aria-label="Dark or light">Dark</button>
+</header>
+<main>
+  <section class="stage" id="stage"><div class="trail" id="trail"></div><svg id="svg" role="img" aria-label="System map"><g id="edges"></g><g id="nodes"></g></svg><div class="hint">Tap a bubble to move there. Tap any step in the path above to jump back to it.<span id="offl"></span></div></section>
+  <aside class="panel" id="panel"></aside>
+</main>
+
+<script>
+/* ---------- groups ---------- */
+const G={root:['Start','#1c2a44'],calls:['Call checks','#1a9c8b'],atcom:['Atcom','#2f6fed'],money:['Money','#b45309'],cancel:['Cancellation','#d4495a'],ovr:['Overrides and promo','#7e22ce'],memos:['Memos and CAR','#0e7490'],codes:['Codes','#4d7c0f'],flights:['Flights and seats','#4338ca'],teams:['Teams','#be185d'],quality:['Quality and app','#0f766e']};
+const ORDER=['calls','atcom','money','cancel','ovr','memos','codes','flights','teams','quality'];
+const H=(g,l,s,r)=>({id:'h_'+g,g,hub:1,l,s,b:[],r});
+const D=[
+H('calls','Call checks','What to check before, during and after every call.',['h_memos','h_money','h_quality']),
+H('atcom','Atcom','Amending and cancelling bookings in Atcom.',['h_cancel','h_money','h_ovr']),
+H('money','Money','Fees, deposits, Direct Debit and refunds.',['h_cancel','h_calls','h_atcom']),
+H('cancel','Cancellation','TUI UK cancellation charges and how to work them out.',['h_atcom','h_money','h_ovr']),
+H('ovr','Overrides and promo','Stop sale overrides, price codes and promo codes.',['h_memos','h_cancel','h_atcom']),
+H('memos','Memos and CAR','How to add memos, and which code to use.',['h_calls','h_ovr','h_codes']),
+H('codes','Codes','Abbreviations, welfare codes and ABTA numbers.',['h_memos','h_flights']),
+H('flights','Flights and seats','Seats, infant seats and assistance.',['h_codes','h_teams']),
+H('teams','Teams','Which team handles what, with numbers.',['h_flights','h_quality']),
+H('quality','Quality and app','The four quality areas and the TUI app.',['h_teams','h_calls']),
+/* calls */
+{id:'verify',g:'calls',l:'Verification types',s:'Green, red (manual GDPR) or retail/third party.',b:['<b>Green:</b> confirm the customer\'s full name.','<b>Red (manual GDPR):</b> booking reference, departure date in full (day, month and year) and full name as it appears on the booking.','<b>Retail / third party:</b> booking reference, departure date in full and the store ABTA number.'],r:['abta','gdprrules']},
+{id:'gdprrules',g:'calls',l:'GDPR rules',s:'Who you can share details with.',b:['Follow the GDPR rules for the booking type: outbound statement, customer, third party or retail.','Never share booking-specific details with unauthorised passengers.','A passenger who is not the policyholder can amend only with the policyholder\'s consent.'],r:['consent','pause','memonla']},
+{id:'pause',g:'calls',l:'Pause the recording',s:'Always when you take payment details.',b:['Pause the call recording whenever you collect payment details.','Part of the Expertise quality area.'],r:['q3']},
+{id:'readback',g:'calls',l:'Full read back',s:'Read the whole booking back before you finish.',b:['<b>Flights:</b> route, dates and times (outbound and inbound).','<b>Passengers:</b> names as on the passports, and dates of birth.','<b>Accommodation:</b> hotel and rooms.','<b>Extras:</b> luggage and seat numbers.','<b>Price:</b> total, deposit paid today, balance and its due date.','<b>Information:</b> resort transfer times, Travel Aware guidelines, Package Travel Regulations information.','Then add the mandatory memo and answer "Full read back given" in your notes.'],r:['aftercall','addmemo','dd','seats']},
+{id:'aftercall',g:'calls',l:'After-call notes',s:'The fields to complete after every call.',b:['Who called? GDPR passed? Reason for call?','Action taken, including any c4c case references.','App? Sales? Errata? Insurance?','Full read back given (Y or N)?','Code, Amount, Reason when you used a code (CAR).','Customers get an updated email confirmation within 24 hours and a survey after the call.'],r:['car','q4','tuiapp']},
+/* atcom */
+{id:'amend',g:'atcom',l:'Amend: steps 1 to 3',s:'The same first steps for every change.',b:['Tick the checkbox in front of the accommodation service line.','Click "Menu".','Select the option for what you are changing.'],r:['board','room','dates','addcost']},
+{id:'board',g:'atcom',l:'Board basis upgrade',s:'Change the Internal Board Code.',b:['After Menu: "Modify External Accommodation Details".','Change the <b>Internal Board Code</b> to match the upgrade.','Click "Update", then "Close".'],r:['amend','stopsale']},
+{id:'room',g:'atcom',l:'Room type upgrade',s:'Change the External Room Description.',b:['After Menu: "Modify External Accommodation Details".','Change the <b>External Room Description</b> to match the upgrade.','Click "Refresh", then "Update".'],r:['amend']},
+{id:'dates',g:'atcom',l:'Dates, destination, duration',s:'Use Amend Inclusive.',b:['After Menu: "Amend Inclusive".','Follow the booking flow (dates, flights, accommodation).','Insurance drops to a cancelled service line if applicable.'],r:['amend','stopsale','promoinvalid','hct']},
+{id:'addcost',g:'atcom',l:'Add costs (PRII)',s:'Service > Override Cost.',b:['Tick the accommodation line, then Service > "Override Cost".','Enter code <b>PRII</b>, quantity 1, the cost and the currency.','Tick all passengers and click "Update".','Multicentre bookings: first accommodation line only.'],r:['amend','prii','car']},
+{id:'cancelsteps',g:'atcom',l:'Cancel a booking: steps',s:'Cancel, show the fees, then add the fee.',b:['Tick the accommodation line checkbox, then "Menu" and "Cancel".','Display the cancellation fees to the customer.','Select a reason, then "Other" and give a detailed reason.','Click "Continue".'],r:['cans','aftercancel','bands']},
+{id:'cans',g:'atcom',l:'CANS: add the fee',s:'Manual Prices with code CANS.',b:['Tick the cancellation fee service line.','Service > "Manual Prices".','Use code <b>CANS</b> and apply the fee amount.','Select "Update and Close to Continue".'],r:['cancelsteps','method','tuiled']},
+{id:'aftercancel',g:'atcom',l:'After cancelling',s:'Three things not to forget.',b:['Old amendment fees <b>remain</b> on the original booking.','Check the unpaid balance and transfer funds if necessary.','Add booking memos using the CAR template.'],r:['car','dd']},
+{id:'consent',g:'atcom',l:'Policyholder consent',s:'Non-policyholders need permission.',b:['Passengers who are not the policyholder can amend with the policyholder\'s consent.','Confirm the policyholder has given permission before you proceed.'],r:['gdprrules']},
+/* money */
+{id:'adminrule',g:'money',l:'Admin fee rule',s:'Paid more or less than deposit + admin fees?',b:['Compare what the customer has paid with (deposit + admin fees).','<b>Paid MORE:</b> do not collect the fees now.','<b>Paid LESS:</b> you MUST collect the fees immediately.','Example: deposit £400, paid £1,000, fees £100. Total needed £500. £1,000 is more than £500, so do not collect the £100.','Admin fees are non-refundable, even if the customer cancels later.'],r:['deposit','dd','car']},
+{id:'deposit',g:'money',l:'Deposits and low deposit',s:'Deposit at booking. Low deposit can still be amended.',b:['The deposit must be taken at the time of booking. Check TUI Know-How for the amounts.','Outstanding low deposit: you CAN amend before the full deposit balance is paid, and you do not need to collect it first. Only collect the new admin fee.'],r:['adminrule','cxrules']},
+{id:'dd',g:'money',l:'Direct Debit and refunds',s:'Atcom adjusts DDs. Wait 5 days before refunds.',b:['After an amendment, Atcom adjusts the Direct Debit payments automatically.','Wait at least <b>5 days</b> after the most recent Direct Debit before processing a refund.','HCMH holds a price difference for 10 days.','Standard wording after a TUI-led cancellation: refund within 7 to 10 working days.'],r:['hcmh','aftercancel','readback','memobe']},
+/* cancel */
+{id:'bands',g:'cancel',l:'Charge bands',s:'Percentage of the total price, by days before departure.',b:['<b>70 days or more:</b> loss of deposit','<b>69 to 63 days:</b> 30%','<b>62 to 49 days:</b> 50%','<b>48 to 29 days:</b> 70%','<b>28 to 15 days:</b> 90%','<b>14 to 0 days:</b> 100%','Package holidays with a TUI flight. From the TUI UK help page, checked October 2026.'],r:['method','cxrules','examples','cancelsteps']},
+{id:'method',g:'cancel',l:'Method',s:'Days, charge, refund.',b:['<b>Days</b> = departure date minus cancellation date.','<b>Charge</b> = band % x total price. The deposit is non-refundable, so keep the higher of the two. Add non-refundable extras.','<b>Refund</b> = paid minus the charge. If the charge is higher than paid, the customer owes the difference.'],r:['bands','examples','cans']},
+{id:'examples',g:'cancel',l:'Worked examples',s:'36 days and 23 days before.',b:['Departure 10 Sep 2026, cancelled 5 Aug 2026 (36 days): £4,500 x 70% = £3,150 fee. Refund £1,350.','Departure 20 Jun 2026, cancelled 28 May 2026 (23 days): £2,800 x 90% = £2,520 fee. Refund £280.','Refund assumes the customer paid in full.'],r:['bands','method']},
+{id:'cxrules',g:'cancel',l:'Rules to remember',s:'Low deposit, other bookings, passengers.',b:['<b>Low Deposit Offer:</b> the full deposit on the confirmation invoice is payable.','<b>Flight-only, hotel-only, coach tours and scheduled airfares</b> have different charges. Check the booking conditions.','<b>Removing a passenger</b> can raise the overall cost.','Offer alternatives first where possible: move the dates or amend (explain any fees).','A cancellation invoice follows within 14 days of cancelling.'],r:['deposit','bands','q2']},
+{id:'tuiled',g:'cancel',l:'If TUI cancels or changes',s:'No fee. Remove the cancellation fees.',b:['No cancellation fee if TUI cancels or makes a significant change.','To remove fees after a TUI-led change: Service > Manual Prices, split across all passengers.','Example wording: full refund within 7 to 10 working days.'],r:['cans','dd']},
+/* ovr */
+{id:'stopsale',g:'ovr',l:'Stop sale overrides',s:'Which ones need Commercial approval.',b:['<b>No approval:</b> board change, removing passengers (same room type), adding a passenger within the room occupancy.','<b>Commercial approval first:</b> adding a room, changing travel dates.','Contact Commercial first, then override after approval.'],r:['board','dates','prii']},
+{id:'prii',g:'ovr',l:'PRII / PRID',s:'Adjust pricing or add costs.',b:['PRII: add the amount to the accommodation line and split across passengers.','PRII or PRID: first accommodation line only on multicentre bookings.','Also used to match a quoted child fare for an infant seat.'],r:['addcost','infant','car','bpd']},
+{id:'bpd',g:'ovr',l:'BPD: price difference',s:'Split evenly across passengers.',b:['Use after an amendment changes the price.','Example: a £235 difference over 3 passengers = £78.33 on two and £78.34 on the lead.'],r:['car','prii']},
+{id:'oldr',g:'ovr',l:'OLDR: digital voucher',s:'Reapply a compensation voucher.',b:['Enter the original booking reference in the reason text.','Apply the voucher amount as a discount.'],r:['car']},
+{id:'hcmh',g:'ovr',l:'HCMH: hold the difference',s:'Booking is cheaper after an amendment.',b:['Apply HCMH and hold the difference for <b>10 days</b> while the customer decides on further changes.','After that it is refunded automatically to the original payment method.','Also applied with TRD so a promo reapply is not auto-refunded.'],r:['dd','trd']},
+{id:'trd',g:'ovr',l:'TRD: booking adjustment',s:'Reapply a lost promo discount.',b:['Calculate the original discount, divide by the number of passengers, apply TRD.','Apply HCMH too.','Remove the original promo code first if it stays on with a wrong value.'],r:['promoinvalid','hcmh','car']},
+{id:'promoapply',g:'ovr',l:'Apply a promo code',s:'Promotional Offer > New.',b:['3 dots at the bottom > "Promotional Offer".','"New" > enter the code > "Calculate" > enter the discount > "Update" > "Close".','Validate on the promo code terms and conditions page. If an expired code is not on the web, ask a Team Manager to check in Atcom.'],r:['promoinvalid']},
+{id:'promoinvalid',g:'ovr',l:'Promo invalid after amendment',s:'Holiday Change amendments, same season.',b:['Try to reapply the original code first.','If it will not reapply: use TRD and HCMH.','Leave clear notes with the original promo details.','Holiday Change types: HCPA, HCPC, HCDC, HCDX.','Building work changes: the original code does not carry over. New codes available at rebooking can be used.'],r:['trd','hcmh','dates','hct']},
+/* memos */
+{id:'addmemo',g:'memos',l:'How to add a memo',s:'After every customer interaction.',b:['Overview page > "Memos" > "+New".','First box: first part (BO, BE, NLA, WTN). Second box: second part (BEM, BEN, NLDA, WEN).','Click the ">" arrow, then "Editor", and type the note.','"Save", then "Close". Ideally before the customer hangs up.','Complex booking memo: for more detailed or complex booking situations.'],r:['car','memobo','readback']},
+{id:'car',g:'memos',l:'CAR template',s:'Code, Amount, Reason. Critical.',b:['<b>C</b> = Code used. <b>A</b> = Amount applied. <b>R</b> = Reason for use.','Include it whenever you use a code to adjust costings, adding <b>or removing</b>.'],r:['addmemo','addcost','prii','bpd','oldr','trd','hcmh','cans','aftercall']},
+{id:'memobo',g:'memos',l:'BO / BEM',s:'Standard booking memo.',b:['General customer interactions and conversations.'],r:['addmemo']},
+{id:'memobe',g:'memos',l:'BE / BEN',s:'Balance extension memo.',b:['Use when extending payment deadlines.'],r:['dd']},
+{id:'memonla',g:'memos',l:'NLA / NLDA',s:'Non-lead authorisation.',b:['Use for authorisations involving non-lead passengers.'],r:['consent']},
+{id:'memohc',g:'memos',l:'HC / HCN, WTN / WEN',s:'Holiday Change and alternative codes.',b:['HC / HCN: Holiday Change memos.','WTN / WEN: alternative memo codes shown in training materials.'],r:['hct']},
+{id:'qsm',g:'memos',l:'QSM: Quick Service Memo',s:'Notes on one service line.',b:['Use for special requests on a flight or accommodation line, for example birthdays and celebrations.','Welfare codes are used in QSMs.'],r:['welfare','abbr']},
+{id:'memore',g:'memos',l:'RETN, REBN, REPT, REIN',s:'Retail, regulations and insurance notes.',b:['<b>RETN:</b> Retail Notes.','<b>REBN:</b> Retail Booking Notes.','<b>REPT:</b> Package Travel Regulations Notes.','<b>REIN:</b> Insurance Notes.'],r:['verify']},
+/* codes */
+{id:'abbr',g:'codes',l:'Abbreviations',s:'API, SSR, SYS, XLEG, XSPC, 3PF, PAX, OB, IB, COB, PC.',b:['<b>API:</b> Advanced Passenger Information','<b>SSR:</b> Special Seat Request','<b>SYS:</b> Select Your Seat','<b>XLEG:</b> Extra Legroom','<b>XSPC:</b> Extra Space','<b>3PF:</b> Third Party Flights','<b>PAX:</b> Passengers','<b>OB / IB:</b> Outbound / Inbound Flight','<b>COB:</b> Close of Business','<b>PC:</b> Programme Changes','<b>QSM:</b> Quick Service Memo'],r:['seats','tpf','qsm']},
+{id:'welfare',g:'codes',l:'Welfare codes',s:'WELF, WELA, WELT, WEN, MAAS, WCH.',b:['<b>WELF:</b> Welfare Remarks - Flight','<b>WELA:</b> Welfare Remarks - Accommodation','<b>WELT:</b> Welfare Remarks - Flight (Taxi)','<b>WEN:</b> Welfare Notes','<b>MAAS:</b> Meet and Assist','<b>WCHC / WCHR / WCHS:</b> wheelchair assistance codes','Used in QSMs.'],r:['qsm','assist']},
+{id:'abta',g:'codes',l:'ABTA numbers',s:'H6265, H1079, 01075.',b:['<b>H6265:</b> package holiday ABTA number.','<b>H1079:</b> flight-only (FO) ABTA number. Use it to quote a child flight fare.','<b>01075:</b> direct customer ABTA number (FC).'],r:['verify','infant']},
+/* flights */
+{id:'seats',g:'flights',l:'Seat types',s:'SYS, XLEG, XSPC and Premium.',b:['<b>SYS (Select Your Seat):</b> standard seating, choose the exact seat.','<b>XLEG (Extra Legroom):</b> additional leg space.','<b>XSPC (Extra Space):</b> extra room and comfort.','<b>Premium:</b> long-haul flights only.','Seats can be chosen right after booking. Seat numbers are confirmed on the booking confirmation.'],r:['abbr','readback']},
+{id:'infant',g:'flights',l:'Infant seat as a child',s:'Book them as a 2-year-old child.',b:['Quote the child fare using flight-only ABTA <b>H1079</b>.','Select the flight line, then "Amend transport pair".','Change the infant to a child, age 2. Select the same flights.','Passenger name page: "New", type "child", date of birth that makes them 2.','Adjust the price with PRID or PRII to match the quote.','Flight-only bookings: enter the infant as a child aged 2 and add a note. They are charged the child rate.'],r:['abta','prii','carseat']},
+{id:'carseat',g:'flights',l:'Car seat: SSR INCS',s:'Window seat, code on SkySpeed.',b:['If the infant uses a car seat onboard, add SSR code <b>INCS</b> on SkySpeed.','Infants in car seats must sit in a window seat.'],r:['infant','abbr']},
+{id:'assist',g:'flights',l:'Assistance',s:'Wheelchair, meet and assist, medical.',b:['The Assisted Travel Team arranges airport assistance, mobility aids and medical equipment.','0800 145 6920 (TUI Airways) or 0203 451 2688 (non-TUI flights).'],r:['welfare','assistt']},
+/* teams */
+{id:'qmt',g:'teams',l:'Quality Monitoring',s:'Calls, feedback, targets.',b:['Listens to calls and gives feedback via Calabrio.','Supports colleagues to reach their targets.'],r:['q1']},
+{id:'hct',g:'teams',l:'Holiday Change (HC)',s:'Booking changes and incidents.',b:['Handles holiday booking changes and amendments.','Manages incidents like overbookings, room changes and facility losses.','Works with resort and product teams for confirmations.'],r:['memohc','promoinvalid','dates']},
+{id:'att',g:'teams',l:'After Travel',s:'Complaints after the holiday.',b:['Post-holiday complaints and feedback. Issues not resolved within 28 days.','Compensation queries (not flight delays).','Includes the Detractor Team for customers who scored 0-3 on satisfaction surveys.','Contact via the Pre-Travel Form: <a href="https://forms.gle/ShT6DXW3rFK3g3Q972" target="_blank" rel="noopener">https://forms.gle/ShT6DXW3rFK3g3Q972</a>'],r:['dig','tours']},
+{id:'tpf',g:'teams',l:'3PF team',s:'Third Party Flights bookings.',b:['Manages 3PF and Dynamic Package bookings.','Handles multicentre bookings without tours that use 3PF flights.'],r:['abbr']},
+{id:'tours',g:'teams',l:'TUI Tours',s:'Named tours and tour complaints.',b:['Bookings that include named tours (for example Highlights of Kenya).','Multicentre bookings that include tours.','All TUI Tours After Travel complaints.','Contact: <b>0204 578 0994</b> or <b>0203 451 2688</b>'],r:['dyt','att']},
+{id:'dyt',g:'teams',l:'Design Your Trip',s:'New platform bookings. Mon to Sat, 9am to 5pm.',b:['Contact Centre of Excellence for TUI Tours Design Your Trip bookings on the new platform.','Platform navigation, booking issues, failed bookings, amendments and cancellations.','Monday to Saturday, 9am to 5pm.','Phone: <b>02038303212</b>. Email: Tours.uk@tui.com'],r:['tours']},
+{id:'assistt',g:'teams',l:'Assisted Travel',s:'Access needs and disabilities.',b:['Supports customers with access needs and disabilities.','Arranges airport assistance, mobility aids and medical equipment.','Contact: <b>0800 145 6920</b> (TUI Airways) or <b>0203 451 2688</b> (non-TUI flights).'],r:['assist','welfare']},
+{id:'t247',g:'teams',l:'24/7 team',s:'In-resort support.',b:['TUI Experience Centre: 24/7 in-resort support while customers are on holiday.','Contactable via the TUI app at any time during the holiday.'],r:['tuiapp']},
+{id:'dig',g:'teams',l:'Digital team',s:'Digital after-travel queries.',b:['Handles digital customer interactions and processes.','Can help with complaint chasing, no show letters, APD refunds and compensation.'],r:['att']},
+/* quality */
+{id:'q1',g:'quality',l:'1. Customer focus',s:'Warm, personal and attentive.',b:['Warm welcome and the right tone of voice.','Let the customer explain without interruption, show empathy, adjust your tone.','Genuine excitement and connection. Tailor your responses.','Closing tailored to the conversation type.'],r:['qmt']},
+{id:'q2',g:'quality',l:'2. Sales excellence',s:'Find the chance, offer, close.',b:['Proactively close the sale after introducing ancillaries.','Offer relevant products with personal benefits.','Save the sale: alternatives or amendments, and explain cancellation fees and the rebooking incentive.','Promote the TUI app and know current offers.'],r:['tuiapp','cxrules']},
+{id:'q3',g:'quality',l:'3. Expertise',s:'GDPR, revenue, notes.',b:['Follow the right GDPR guidelines for the booking type.','Prevent revenue loss: follow the correct processes.','Leave full booking notes. Pause the recording for payment details.'],r:['gdprrules','pause','addmemo']},
+{id:'q4',g:'quality',l:'4. Efficiency',s:'Questions, first call resolution, systems.',b:['Use open and closed questions.','Work in a solution-oriented way and resolve it first time.','Use systems confidently and manage expectations (for example updated email within 24 hours).','Clear call structure while staying connected with the customer.'],r:['aftercall','readback']},
+{id:'tuiapp',g:'quality',l:'TUI app',s:'What to mention before travel.',b:['Free to download. A travel checklist.','Flight check-in and boarding pass on the phone.','Live flight times and transfer information.','All booking details in one place. Weather forecast.','Remind customers to download important documents before they travel, as some features work best with an internet connection.','Note it under "App?" in your after-call notes.'],r:['aftercall','q2','t247']}
+];
+D.push({id:'__root',g:'root',l:'Pre-Travel system map',s:'Start here. Tap a topic, then keep tapping to move through the map.',b:[],r:[]});
+
+/* ---------- graph ---------- */
+const N={},adj={},idx={};
+D.forEach((n,i)=>{N[n.id]=n;idx[n.id]=i;adj[n.id]=new Set()});
+const link=(a,b)=>{if(a!==b&&N[a]&&N[b]){adj[a].add(b);adj[b].add(a)}};
+D.forEach(n=>{if(n.id==='__root')return;if(!n.hub)link(n.id,'h_'+n.g);(n.r||[]).forEach(r=>{if(!N[r])console.warn('bad link',n.id,r);else link(n.id,r)})});
+ORDER.forEach(g=>link('__root','h_'+g));
+const color=n=>G[n.g][1];
+const strip=s=>s.replace(/<[^>]+>/g,'');
+const index=D.filter(n=>n.id!=='__root').map(n=>({n,l:n.l.toLowerCase(),t:(n.s+' '+n.b.map(strip).join(' ')).toLowerCase()}));
+
+/* ---------- state ---------- */
+let hist=['__root'];
+const stage=document.getElementById('stage'),svg=document.getElementById('svg'),gN=document.getElementById('nodes'),gE=document.getElementById('edges');
+const panel=document.getElementById('panel'),trail=document.getElementById('trail'),backB=document.getElementById('back');
+const els={};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const LS={get(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let stars=LS.get('tui-map-stars',[]).filter(i=>N[i]&&i!=='__root'),recent=LS.get('tui-map-recent',[]).filter(i=>N[i]&&i!=='__root'),notes=LS.get('tui-map-notes',{});
+Object.keys(notes).forEach(k=>{if(!N[k]||!String(notes[k]).trim())delete notes[k]});
+const szs={};
+function decorate(g,n,sz){g.querySelectorAll('.dec').forEach(x=>x.remove());if(!sz||n.id==='__root')return;
+  const NS='http://www.w3.org/2000/svg';
+  if(stars.includes(n.id)){const t=document.createElementNS(NS,'text');t.setAttribute('class','dec dstar');t.setAttribute('x',-sz.w/2+11);t.setAttribute('y',-sz.h/2+5);t.textContent='\u2605';g.appendChild(t)}
+  if(notes[n.id]){const c=document.createElementNS(NS,'circle');c.setAttribute('class','dec dnote');c.setAttribute('cx',sz.w/2-8);c.setAttribute('cy',-sz.h/2+3);c.setAttribute('r',5);g.appendChild(c)}}
+const redecorate=id=>{if(els[id])decorate(els[id],N[id],szs[id])};
+D.forEach(n=>{const g=document.createElementNS('http://www.w3.org/2000/svg','g');g.setAttribute('class','nd off');g.setAttribute('tabindex','0');g.setAttribute('role','button');g.dataset.id=n.id;g.style.setProperty('--c',color(n));gN.appendChild(g);els[n.id]=g});
+const cv=document.createElement('canvas').getContext('2d');
+const tw=(t,fs,w)=>{cv.font=w+' '+fs+'px Inter, system-ui, sans-serif';return cv.measureText(t).width};
+function wrap(label,max){const w=label.split(' ');const L=[];let c='';w.forEach(x=>{if((c+' '+x).trim().length>max&&c){L.push(c);c=x}else c=(c+' '+x).trim()});L.push(c);return L}
+function size(n,focus,narrow){const fs=focus?15:12.5,wt=focus?700:600,max=focus?(narrow?16:20):(narrow?14:17);const L=wrap(n.l,max);const w=Math.max(...L.map(l=>tw(l,fs,wt)))+(focus?36:26);const h=L.length*fs*1.28+(focus?20:15);return{L,fs,w:Math.ceil(w),h:Math.ceil(h)}}
+function ordered(f){const fg=N[f].g;const ids=[...adj[f]].filter(i=>f==='__root'||i!=='__root');const gi=g=>g===fg?-1:(ORDER.indexOf(g));return ids.sort((a,b)=>{const A=N[a],B=N[b];return (gi(A.g)-gi(B.g))||((B.hub?1:0)-(A.hub?1:0))||(idx[a]-idx[b])})}
+function layout(f,W,H,narrow){
+  const nb=ordered(f);const fs=size(N[f],true,narrow);const items=nb.map(id=>({id,...size(N[id],false,narrow)}));
+  if(narrow){const n=items.length,rows=Math.ceil(n/2),mh=Math.max(...items.map(i=>i.h)),rowH=mh+10;
+    const fy=(trail.offsetHeight||28)+22+fs.h/2,y0=fy+fs.h/2+34;
+    items.forEach((it,i)=>{const col=i<rows?0:1,row=i<rows?i:i-rows;it.x=W*(col?0.735:0.265);it.y=y0+row*rowH+mh/2});
+    if(n%2===1&&rows>1){/* keep the last pill in its own column */}
+    const all=[{id:f,x:W/2,y:fy,fixed:1,...fs},...items];all.height=Math.ceil(y0+rows*rowH+14);return all}
+  const cx=W/2,cy=H/2+(narrow?14:18),n=items.length,mw=Math.max(...items.map(i=>i.w)),mh=Math.max(...items.map(i=>i.h));
+  const rxM=Math.max(60,W/2-mw/2-10),ryM=Math.max(60,(H-34)/2-mh/2-10);
+  items.forEach((it,i)=>{const a=-Math.PI/2+i*2*Math.PI/n;let k=n<=7?0.92:(n<=10?(i%2?0.7:1):(i%2?0.58:1));it.x=cx+Math.cos(a)*rxM*k;it.y=cy+Math.sin(a)*ryM*k});
+  const all=[{id:f,x:cx,y:cy,w:fs.w,h:fs.h,fixed:1,...fs},...items];
+  for(let it=0;it<80;it++){let moved=false;
+    for(let i=0;i<all.length;i++)for(let j=i+1;j<all.length;j++){const a=all[i],b=all[j];const ox=(a.w+b.w)/2+8-Math.abs(a.x-b.x),oy=(a.h+b.h)/2+6-Math.abs(a.y-b.y);
+      if(ox>0&&oy>0){moved=true;const vert=oy<ox;const dir=vert?(a.y<=b.y?-1:1):(a.x<=b.x?-1:1);const d=(vert?oy:ox)/2+0.5;
+        const wa=a.fixed?0:(b.fixed?1:.5),wb=b.fixed?0:(a.fixed?1:.5);
+        if(vert){a.y+=dir*d*2*wa;b.y-=dir*d*2*wb}else{a.x+=dir*d*2*wa;b.x-=dir*d*2*wb}}}
+    all.forEach(o=>{if(o.fixed)return;o.x=Math.min(W-o.w/2-6,Math.max(o.w/2+6,o.x));o.y=Math.min(H-o.h/2-6,Math.max(o.h/2+34,o.y))});
+    if(!moved)break}
+  return all}
+function paint(g,n,role,sz){g.innerHTML='';
+  const r=document.createElementNS('http://www.w3.org/2000/svg','rect');r.setAttribute('x',-sz.w/2);r.setAttribute('y',-sz.h/2);r.setAttribute('width',sz.w);r.setAttribute('height',sz.h);r.setAttribute('rx',role==='focus'?16:11);g.appendChild(r);
+  const t=document.createElementNS('http://www.w3.org/2000/svg','text');t.setAttribute('y',-(sz.L.length-1)*sz.fs*1.28/2+sz.fs*.36);
+  sz.L.forEach((l,i)=>{const s=document.createElementNS('http://www.w3.org/2000/svg','tspan');s.setAttribute('x',0);s.setAttribute('dy',i?sz.fs*1.28:0);s.textContent=l;t.appendChild(s)});g.appendChild(t);
+  g.setAttribute('class','nd'+(role==='focus'?' focus':'')+(n.hub?' hub':'')+(n.id==='__root'?' root':''));g.setAttribute('aria-label',n.l);szs[n.id]=sz;decorate(g,n,sz)}
+function curve(a,b,bend){const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;const dx=b.x-a.x,dy=b.y-a.y;const k=bend;return `M${a.x.toFixed(1)},${a.y.toFixed(1)} Q${(mx-dy*k).toFixed(1)},${(my+dx*k).toFixed(1)} ${b.x.toFixed(1)},${b.y.toFixed(1)}`}
+
+function render(){
+  drawTrail();
+  const W=stage.clientWidth,narrow=W<640;
+  const f=hist[hist.length-1];let Hh=stage.clientHeight;const pos=layout(f,W,Hh,narrow);
+  if(narrow){Hh=Math.max(300,pos.height);stage.style.height=Hh+'px'}else stage.style.height='';
+  svg.setAttribute('viewBox','0 0 '+W+' '+Hh);const vis={};pos.forEach(p=>vis[p.id]=p);
+  D.forEach(n=>{const g=els[n.id],p=vis[n.id];
+    if(p){paint(g,n,n.id===f?'focus':'nb',p);g.style.transform='translate('+p.x.toFixed(1)+'px,'+p.y.toFixed(1)+'px)';g.style.opacity=1;g.style.pointerEvents=n.id===f?'none':'auto'}
+    else{g.setAttribute('class','nd off'+(n.hub?' hub':''));g.style.transform='translate('+(W/2)+'px,'+(Hh/2)+'px) scale(.4)';g.style.opacity=0;g.style.pointerEvents='none'}});
+  let e='';const c=vis[f];
+  pos.forEach(p=>{if(p.id===f)return;e+='<path class="ed" stroke="'+color(N[p.id])+'" d="'+curve(c,p,.0)+'"/>'});
+  for(let i=1;i<pos.length;i++)for(let j=i+1;j<pos.length;j++){if(adj[pos[i].id].has(pos[j].id))e+='<path class="ed2" stroke="'+color(N[pos[i].id])+'" d="'+curve(pos[i],pos[j],.18)+'"/>'}
+  gE.innerHTML=e;
+  drawPanel(f);drawTrail();backB.disabled=hist.length<2;
+  try{history.replaceState(null,'',f==='__root'?location.pathname+location.search:'#'+f)}catch(x){}
+}
+const chip=(id)=>{const n=N[id];return '<button class="chip" type="button" data-go="'+id+'" style="--c:'+color(n)+'"><i></i>'+n.l+'</button>'};
+function drawPanel(f){const n=N[f];let h='<div class="in">';
+  if(f==='__root'){h+='<span class="tag" style="--c:#1c2a44">Start here</span><h2>Pre-Travel system map</h2><p class="sum">Everything on the system side, joined up. You never need to remember where something lives.</p><ul class="how"><li><b>1</b><span>Tap a <b style="display:inline;background:none;color:inherit;width:auto;height:auto">topic bubble</b> (or search a code like CANS or PRII).</span></li><li><b>2</b><span>Read the details here, then tap any connected bubble to move there.</span></li><li><b>3</b><span>Use <b style="display:inline;background:none;color:inherit;width:auto;height:auto">Back</b> to step back, and <b style="display:inline;background:none;color:inherit;width:auto;height:auto">Map</b> to start again.</span></li></ul><h3>Topics</h3><div class="chips">'+ORDER.map(g=>chip('h_'+g)).join('')+'</div>'+personal()}
+  else{h+='<div class="trow"><span class="tag" style="--c:'+color(n)+'">'+G[n.g][0]+(n.hub?' / topic':'')+'</span>'+starBtn(f)+'</div><h2>'+n.l+'</h2><p class="sum">'+n.s+'</p>';
+    if(n.b.length)h+='<ul>'+n.b.map(b=>'<li>'+b+'</li>').join('')+'</ul>';
+    h+=noteBlock(f);
+    const nb=ordered(f);const groups={};nb.forEach(id=>{(groups[N[id].g]=groups[N[id].g]||[]).push(id)});
+    h+='<h3>Connected to</h3>';Object.keys(groups).forEach(g=>{h+='<div class="gname">'+G[g][0]+'</div><div class="chips">'+groups[g].map(chip).join('')+'</div>'})}
+  panel.innerHTML=h+'</div>';panel.scrollTop=0}
+function drawTrail(){const t=hist;trail.innerHTML=t.map((id,i)=>'<button type="button" data-t="'+i+'" class="'+(i===t.length-1?'cur':'')+'"'+(i<t.length-1?' title="Go back to '+(id==='__root'?'the map':N[id].l.replace(/"/g,''))+'"':'')+'>'+(id==='__root'?'Map':N[id].l)+'</button>').join('<span>&rsaquo;</span>');trail.scrollLeft=trail.scrollWidth}
+function go(id){if(!N[id]||id===hist[hist.length-1])return;hist.push(id);if(id!=='__root'){recent=[id,...recent.filter(x=>x!==id)].slice(0,8);LS.set('tui-map-recent',recent)}if(hist.length>60)hist.shift();render()}
+function back(){if(hist.length>1){hist.pop();render()}}
+document.getElementById('svg').addEventListener('click',e=>{const g=e.target.closest('.nd');if(g&&!g.classList.contains('off'))go(g.dataset.id)});
+svg.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){const g=e.target.closest('.nd');if(g&&!g.classList.contains('off')){e.preventDefault();go(g.dataset.id)}}});
+panel.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b)go(b.dataset.go)});
+trail.addEventListener('click',e=>{const b=e.target.closest('[data-t]');if(b&&+b.dataset.t<hist.length-1){hist=hist.slice(0,+b.dataset.t+1);render()}});
+backB.onclick=back;document.getElementById('home').onclick=()=>{hist=['__root'];render()};
+window.addEventListener('keydown',e=>{if(e.target.matches('input'))return;if(e.key==='Backspace'||e.key==='ArrowLeft'){e.preventDefault();back()}else if(e.key==='/'){e.preventDefault();q.focus()}});
+let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{D.forEach(n=>els[n.id].style.transition='none');render();requestAnimationFrame(()=>D.forEach(n=>els[n.id].style.transition=''))},120)});
+
+/* ---------- search ---------- */
+const q=document.getElementById('q'),res=document.getElementById('res');let hits=[],sel=0;
+function search(){const v=q.value.trim().toLowerCase();if(!v){showQuick();return}
+  hits=index.map(o=>{let s=99;if(o.l.startsWith(v))s=0;else if(o.l.includes(v))s=1;else if((o.t+' '+(notes[o.n.id]||'').toLowerCase()).includes(v))s=3;return{o,s}}).filter(x=>x.s<99).sort((a,b)=>a.s-b.s).slice(0,8);sel=0;
+  res.innerHTML=hits.length?hits.map((h,i)=>'<button type="button" data-i="'+i+'" class="'+(i===0?'sel':'')+'"><i style="background:'+color(h.o.n)+'"></i><div><b>'+h.o.n.l+'</b><span>'+G[h.o.n.g][0]+': '+h.o.n.s+'</span></div></button>').join(''):'<button type="button" disabled><div><b>No match</b><span>Try a code (CANS, PRII, BPD) or a word (deposit, memo).</span></div></button>';
+  res.classList.add('open')}
+function pick(i){const h=hits[i];if(!h)return;res.classList.remove('open');q.value='';q.blur();go(h.o.n.id)}
+function showQuick(){hits=[];let h='';const add=(t,ids)=>{ids=ids.filter(i=>N[i]);if(!ids.length)return;h+='<div class="qh">'+t+'</div>';ids.forEach(id=>{h+='<button type="button" data-i="'+hits.length+'"><i style="background:'+color(N[id])+'"></i><div><b>'+N[id].l+'</b><span>'+G[N[id].g][0]+'</span></div></button>';hits.push({o:{n:N[id]}})})};add('Starred',stars);add('Recent',recent.filter(i=>!stars.includes(i)).slice(0,5));sel=0;if(h){res.innerHTML=h;res.classList.add('open');const b=res.querySelector('button');if(b)b.classList.add('sel')}else res.classList.remove('open')}
+q.addEventListener('input',search);q.addEventListener('focus',()=>{if(!q.value.trim())showQuick()});
+q.addEventListener('keydown',e=>{if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();sel=(sel+(e.key==='ArrowDown'?1:-1)+hits.length)%Math.max(hits.length,1);[...res.querySelectorAll('button')].forEach((b,i)=>b.classList.toggle('sel',i===sel))}else if(e.key==='Enter'){e.preventDefault();pick(sel)}else if(e.key==='Escape'){q.value='';res.classList.remove('open');q.blur()}});
+res.addEventListener('mousedown',e=>{const b=e.target.closest('[data-i]');if(b){e.preventDefault();pick(+b.dataset.i)}});
+document.addEventListener('click',e=>{if(!e.target.closest('.search'))res.classList.remove('open')});
+
+/* ---------- theme ---------- */
+const th=document.getElementById('theme');
+function setTheme(m){document.documentElement.dataset.theme=m;th.textContent=m==='dark'?'Light':'Dark';try{localStorage.setItem('tui-map-theme',m)}catch(e){}document.querySelector('meta[name=theme-color]').content=m==='dark'?'#0f1624':'#f4f7fb'}
+th.onclick=()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
+setTheme(document.documentElement.dataset.theme==='dark'?'dark':'light');
+
+/* ---------- stars, notes, recent ---------- */
+const personal=()=>{let h='';const sec=(t,ids)=>{if(ids.length)h+='<h3>'+t+'</h3><div class="chips">'+ids.map(chip).join('')+'</div>'};
+  sec('Starred',stars);sec('Recent',recent.slice(0,6));sec('My notes',Object.keys(notes));return h};
+const starBtn=id=>'<button type="button" class="starbtn'+(stars.includes(id)?' on':'')+'" id="starbtn" data-star="'+id+'" aria-pressed="'+stars.includes(id)+'">'+(stars.includes(id)?'\u2605 Starred':'\u2606 Star')+'</button>';
+const noteBlock=id=>'<h3>My note</h3><textarea id="mynote" data-id="'+id+'" placeholder="Write something you want to remember about this...">'+esc(notes[id]||'')+'</textarea><div class="nsaved" id="nsaved"></div>';
+const slWrap=document.getElementById('sl'),starsBtn=document.getElementById('starsbtn');
+function renderStars(){document.getElementById('starcount').textContent=stars.length;
+  slWrap.innerHTML=stars.length?stars.map(id=>'<button type="button" data-go="'+id+'"><i style="background:'+color(N[id])+'"></i><div><b>'+N[id].l+'</b><span>'+G[N[id].g][0]+'</span></div></button>').join(''):'<div class="empty">Open any bubble and tap Star. It will appear here.</div>'}
+function toggleStar(id){const i=stars.indexOf(id);if(i>=0)stars.splice(i,1);else stars.unshift(id);LS.set('tui-map-stars',stars);renderStars();redecorate(id);const b=document.getElementById('starbtn');if(b&&b.dataset.star===id){b.className='starbtn'+(stars.includes(id)?' on':'');b.textContent=stars.includes(id)?'\u2605 Starred':'\u2606 Star';b.setAttribute('aria-pressed',stars.includes(id))}}
+starsBtn.onclick=e=>{e.stopPropagation();slWrap.classList.toggle('open')};
+slWrap.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b){slWrap.classList.remove('open');go(b.dataset.go)}});
+document.addEventListener('click',e=>{if(!e.target.closest('.starwrap'))slWrap.classList.remove('open')});
+let nt;panel.addEventListener('input',e=>{const t=e.target;if(t.id!=='mynote')return;const id=t.dataset.id;clearTimeout(nt);nt=setTimeout(()=>{const v=t.value.trim();if(v)notes[id]=v;else delete notes[id];LS.set('tui-map-notes',notes);redecorate(id);const s=document.getElementById('nsaved');if(s){s.textContent='Saved';clearTimeout(s._t);s._t=setTimeout(()=>{s.textContent=''},2000)}},400)});
+panel.addEventListener('click',e=>{const b=e.target.closest('[data-star]');if(b)toggleStar(b.dataset.star)});
+renderStars();
+/* ---------- install and offline ---------- */
+let dip=null;const inst=document.getElementById('install');
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();dip=e;inst.hidden=false});
+inst.onclick=async()=>{if(!dip)return;dip.prompt();await dip.userChoice;dip=null;inst.hidden=true};
+window.addEventListener('appinstalled',()=>{inst.hidden=true});
+if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0){navigator.serviceWorker.register('sw.js').then(()=>navigator.serviceWorker.ready).then(()=>{document.getElementById('offl').textContent=' Works offline.'}).catch(()=>{})}
+
+/* ---------- start (supports #id links) ---------- */
+const h0=(location.hash||'').slice(1);if(N[h0]&&h0!=='__root')hist=['__root',h0];
+D.forEach(n=>els[n.id].style.transition='none');render();requestAnimationFrame(()=>requestAnimationFrame(()=>D.forEach(n=>els[n.id].style.transition='')));
+</script>
+</body>
+</html>
